@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  leetcodeId    String   @unique
+  title         String
+  slug          String   @unique
+  difficulty    String
+  contentMd     String
+  signatureJson Json
+  constraintsJson Json?
+  checkerType   String   @default("EXACT")
+  source        String?
+  sourcePath    String?
+  sourceCommit  String?
+
+  solutions     Solution[]
+  testSpecs     TestSpec?
+  submissions   Submission[]
+  userProgress  UserProgress?
+  concepts      QuestionConcept[]
+}
+
+model Solution {
+  id          String   @id @default(uuid())
+  questionId  String
+  language    String
+  code        String
+  isReference Boolean  @default(false)
+  source      String?
+  
+  question    Question @relation(fields: [questionId], references: [id])
+}
+
+model TestSpec {
+  id                  String @id @default(uuid())
+  questionId          String @unique
+  samplesJson         Json
+  edgeCasesJson       Json?
+  generatorConfigJson Json?
+  fuzzCount           Int    @default(0)
+
+  question            Question @relation(fields: [questionId], references: [id])
+}
+
+model Submission {
+  id             String   @id @default(uuid())
+  questionId     String
+  language       String
+  code           String
+  status         String
+  runtimeMs      Int?
+  stderr         String?
+  stdout         String?
+  compileLog     String?
+  failedCaseJson Json?
+  createdAt      DateTime @default(now())
+
+  question       Question @relation(fields: [questionId], references: [id])
+  mistakeLogs    MistakeLog[]
+}
+
+model UserProgress {
+  id            String   @id @default(uuid())
+  questionId    String   @unique
+  status        String
+  lastAttemptAt DateTime?
+  bestStatus    String?
+
+  question      Question @relation(fields: [questionId], references: [id])
+}
+
+model Concept {
+  id        String            @id @default(uuid())
+  name      String            @unique
+  questions QuestionConcept[]
+  mastery   ConceptMastery?
+  mistakes  MistakeLog[]
+}
+
+model QuestionConcept {
+  questionId String
+  conceptId  String
+  
+  question   Question @relation(fields: [questionId], references: [id])
+  concept    Concept  @relation(fields: [conceptId], references: [id])
+
+  @@id([questionId, conceptId])
+}
+
+model ConceptMastery {
+  id             String   @id @default(uuid())
+  conceptId      String   @unique
+  score          Int      @default(0)
+  lastReviewedAt DateTime?
+  nextReviewAt   DateTime?
+
+  concept        Concept  @relation(fields: [conceptId], references: [id])
+}
+
+model MistakeLog {
+  id           String   @id @default(uuid())
+  submissionId String
+  mistakeType  String
+  conceptId    String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  concept      Concept?   @relation(fields: [conceptId], references: [id])
+}
+
+model Flashcard {
+  id           String   @id @default(uuid())
+  front        String
+  back         String
+  nextReviewAt DateTime @default(now())
+  interval     Int      @default(1)
+  ease         Float    @default(2.5)
+  createdAt    DateTime @default(now())
+}
+
+model StudySession {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now()) @db.Date
+  planJson      Json
+  completedJson Json?
+  reflections   String?
+}
