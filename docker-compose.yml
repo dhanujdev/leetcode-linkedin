@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: leetcode_linkedin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  piston:
+    image: ghcr.io/engineer-man/piston
+    container_name: piston
+    ports:
+      - "2000:2000"
+    volumes:
+      - piston_packages:/piston/packages
+    restart: always
+    privileged: true
+
+volumes:
+  postgres_data:
+  piston_packages:
